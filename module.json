@@ -1,0 +1,31 @@
+{
+  "id": "suicidesquid-automation",
+  "title": "PF2E Suicidesquid Automation",
+  "description": "Our custom automation module for PF2E.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "GM"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "packs": [
+    {
+      "name": "effects",
+      "label": "Suicidesquid Effects",
+      "path": "packs/effects",
+      "type": "Item",
+      "system": "pf2e",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ]
+}
