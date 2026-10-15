@@ -1,5 +1,5 @@
 import { registerHook } from "../lib/hooks.js";
-import { isActiveGM, messageHasSpellSlug } from "../lib/utils.js";
+import { isActiveGM, messageHasSpellSlug, findOutcome } from "../lib/utils.js";
 import { debug } from "../lib/debug.js";
 
 const EFFECT_UUID = "Compendium.suicidesquid-automation.effects.Item.gVYWRgAw0eJSFKqe";
@@ -17,20 +17,6 @@ function isAmped(message) {
 function getRank(message) {
   const pf2e = message.flags?.pf2e ?? {};
   return pf2e.origin?.castRank ?? pf2e.context?.origin?.castRank ?? BASE_RANK;
-}
-
-// Finds the save outcome the toolbelt stored for this token anywhere in its flags.
-function findOutcome(node, keys, depth = 0) {
-  if (!node || typeof node !== "object" || depth > 6) return null;
-  for (const [key, value] of Object.entries(node)) {
-    if (keys.includes(key) && value && typeof value === "object") {
-      const outcome = value.success ?? value.outcome;
-      if (typeof outcome === "string") return outcome;
-    }
-    const nested = findOutcome(value, keys, depth + 1);
-    if (nested) return nested;
-  }
-  return null;
 }
 
 async function onUpdateChatMessage(message, change) {

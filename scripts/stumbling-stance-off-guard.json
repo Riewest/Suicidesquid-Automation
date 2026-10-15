@@ -1,0 +1,32 @@
+{
+  "name": "Effect: Stumbling Stance Off-Guard",
+  "type": "effect",
+  "img": "icons/svg/daze.svg",
+  "system": {
+    "slug": "effect-stumbling-stance-off-guard",
+    "level": { "value": 1 },
+    "description": {
+      "value": "<p>You are off-guard against the next Stumbling Swing Strike the monk makes against you before the end of their next turn.</p>"
+    },
+    "duration": {
+      "value": 1,
+      "unit": "rounds",
+      "sustained": false,
+      "expiry": "turn-end"
+    },
+    "start": { "value": 0, "initiative": null },
+    "tokenIcon": { "show": true },
+    "unidentified": false,
+    "traits": { "value": [], "rarity": "common" },
+    "rules": [
+      {
+        "key": "FlatModifier",
+        "selector": "ac",
+        "type": "circumstance",
+        "value": -2,
+        "label": "Off-Guard (Stumbling Stance)",
+        "predicate": ["origin:signature:{item|origin.signature}"]
+      }
+    ]
+  }
+}
