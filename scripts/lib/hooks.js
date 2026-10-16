@@ -9,3 +9,14 @@ export function registerHook(name, event, fn) {
   registered.set(name, { event, id: Hooks.on(event, fn) });
   debug("hooks", `registered ${name} on ${event}`);
 }
+
+/** Removes all hooks registered under an automation's name prefix. */
+export function unregisterHooks(prefix) {
+  for (const [name, hook] of registered) {
+    if (name === prefix || name.startsWith(`${prefix}:`)) {
+      Hooks.off(hook.event, hook.id);
+      registered.delete(name);
+      debug("hooks", `unregistered ${name} from ${hook.event}`);
+    }
+  }
+}
