@@ -1,0 +1,60 @@
+{
+  "_id": "ZXilJBgBaMJ04s40",
+  "name": "Overdrive Cooldown",
+  "type": "effect",
+  "img": "icons/svg/hourglass.svg",
+  "system": {
+    "description": {
+      "value": "<p>Your gizmos are cooling down after Overdrive. This visible effect tracks when you can use Overdrive again.</p>",
+      "gm": ""
+    },
+    "duration": {
+      "expiry": "turn-start",
+      "sustained": false,
+      "unit": "minutes",
+      "value": 1
+    },
+    "level": {
+      "value": 1
+    },
+    "publication": {
+      "license": "ORC",
+      "remaster": true,
+      "title": "Suicidesquid Automation",
+      "authors": ""
+    },
+    "rules": [],
+    "start": {
+      "initiative": null,
+      "value": 0
+    },
+    "tokenIcon": {
+      "show": true
+    },
+    "traits": {
+      "value": [],
+      "otherTags": []
+    },
+    "slug": "suicidesquid-overdrive-cooldown",
+    "_migration": {
+      "version": 0.959,
+      "previous": null
+    },
+    "unidentified": false,
+    "badge": null,
+    "fromSpell": false,
+    "context": null
+  },
+  "effects": [],
+  "folder": null,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {
+    "suicidesquid-automation": {
+      "overdriveCooldown": {
+        "source": "automation"
+      }
+    }
+  }
+}
