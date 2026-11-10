@@ -1,17 +1,33 @@
 import { registerHook } from "../lib/hooks.js";
-import { isActiveGM, messageHasSpellSlug } from "../lib/utils.js";
+import { isActiveGM, findOutcome } from "../lib/utils.js";
 import { debug } from "../lib/debug.js";
 import { addDescription } from "../lib/addenda.js";
 
 const EFFECT_UUID = "Compendium.suicidesquid-automation.effects.Item.PLj8Zv2rN6yztpGl";
 const SPELL_SLUG = "forbidden-thought";
+const SAVE_OUTCOMES = new Set(["criticalSuccess", "success", "failure", "criticalFailure"]);
+
+// Match the originating spell itself, not arbitrary actor roll options: an
+// immune creature can carry the spell name on unrelated attacks and damage.
+function isForbiddenThoughtCast(message) {
+  const pf2e = message.flags?.pf2e;
+  const origin = pf2e?.origin;
+  const item = message.item;
+  const itemMatches = item?.type === "spell" && item.slug === SPELL_SLUG;
+  const originMatches = origin?.type === "spell" && (
+    origin.slug === SPELL_SLUG ||
+    origin.rollOptions?.includes(`origin:item:slug:${SPELL_SLUG}`) ||
+    origin.rollOptions?.includes(`origin:item:${SPELL_SLUG}`)
+  );
+  const legacyMatches = origin?.slug === SPELL_SLUG && (!origin.type || origin.type === "spell");
+  return Boolean(itemMatches || originMatches || legacyMatches);
+}
 
 // Warn the GM before casting at a target that is already immune.
 async function onCreateChatMessage(message) {
   if (!isActiveGM()) return;
 
-  const isSpellCast = message.flags?.pf2e?.context?.type === "spell-cast";
-  if (!isSpellCast || !messageHasSpellSlug(message, SPELL_SLUG)) return;
+  if (!isForbiddenThoughtCast(message) || message.flags?.pf2e?.context?.type !== "spell-cast") return;
   debug("forbidden-thought", "spell cast detected", message.id);
 
   const itemSource = await fromUuid(EFFECT_UUID);
@@ -60,28 +76,41 @@ async function onCreateChatMessage(message) {
   }).render(true);
 }
 
-// Apply immunity once the toolbelt save result lands on the message.
+// Apply immunity once the toolbelt save result lands on the originating spell
+// or its damage card. Toolbelt can transfer save data between those cards.
 async function onUpdateChatMessage(message, change) {
   if (!isActiveGM()) return;
-  if (!messageHasSpellSlug(message, SPELL_SLUG)) return;
+  if (!isForbiddenThoughtCast(message)) return;
 
-  const changeString = JSON.stringify(change ?? {});
-  if (!changeString.includes("pf2e-toolbelt")) return;
+  // Match a save outcome in the changed toolbelt data, not an actor ID appearing
+  // anywhere in the update (which may instead refer to damage recipients).
+  const toolbeltChange = foundry.utils.expandObject(change ?? {}).flags?.["pf2e-toolbelt"];
+  if (!toolbeltChange) return;
   debug("forbidden-thought", "toolbelt update on", message.id, change);
 
+  let source;
   for (const token of game.scenes.current?.tokens ?? []) {
     const actor = token.actor;
     if (!actor) continue;
 
-    const matchesTarget =
-      changeString.includes(token.id) ||
-      changeString.includes(actor.id) ||
-      changeString.includes(token.uuid);
-    if (!matchesTarget) continue;
+    let outcome = findOutcome(toolbeltChange, [token.id, actor.id, token.uuid]);
 
-    const itemSource = await fromUuid(EFFECT_UUID);
-    if (!itemSource) return;
-    const source = itemSource.toObject();
+    // Foundry may send only the changed portion of a save entry, omitting its
+    // unchanged success value. Use the complete saved result only for the same
+    // variant and token explicitly present in this update's saves collection.
+    const changedVariants = toolbeltChange.targetHelper?.saveVariants ?? {};
+    const storedVariants = message.flags?.["pf2e-toolbelt"]?.targetHelper?.saveVariants ?? {};
+    for (const [variantId, variant] of Object.entries(changedVariants)) {
+      if (!Object.hasOwn(variant?.saves ?? {}, token.id)) continue;
+      outcome ??= storedVariants[variantId]?.saves?.[token.id]?.success;
+    }
+    if (!SAVE_OUTCOMES.has(outcome)) continue;
+
+    if (!source) {
+      const itemSource = await fromUuid(EFFECT_UUID);
+      if (!itemSource) return;
+      source = itemSource.toObject();
+    }
 
     if (actor.itemTypes.effect.some((e) => e.slug === source.system.slug)) {
       debug("forbidden-thought", `${actor.name} already immune, skipping`);
